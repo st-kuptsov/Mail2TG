@@ -18,9 +18,10 @@ import (
 	"time"
 )
 
+var Version = "dev"
+
 // main запускает Mail2TG сервис
 func main() {
-	version := "dev"
 	start := time.Now()
 
 	configPath := flag.String("config", "config/config.yaml", "Path to config file")
@@ -37,7 +38,7 @@ func main() {
 		"config", *configPath,
 		"logLevel", cfg.Logging.Level,
 		"pid", os.Getpid(),
-		"version", version,
+		"version", Version,
 	)
 
 	// Инициализация метрик

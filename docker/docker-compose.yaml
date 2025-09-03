@@ -1,0 +1,15 @@
+services:
+  mail2tg:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    container_name: mail2tg
+    image: mail2tg:latest
+    environment:
+      - TZ=Europe/Moscow       # таймзона контейнера
+    ports:
+      - "9090:9090"            # порт для метрик Prometheus
+    volumes:
+      - ../config:/app/config   # конфигурация и secrets
+      - ../logs:/app/logs       # лог-файлы
+    restart: unless-stopped

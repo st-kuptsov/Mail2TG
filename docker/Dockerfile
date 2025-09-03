@@ -21,7 +21,7 @@ COPY pkg ./pkg
 ARG APP_VERSION=dev
 
 # Собираем бинарник статически для минимального образа
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-s -w -X main.version=${APP_VERSION}" \
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags "-s -w -X main.Version=${APP_VERSION}" \
     -o ./bin/mail2tg ./cmd/mail2tg/main.go
 
 # ===========================
