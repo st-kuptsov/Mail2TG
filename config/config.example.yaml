@@ -1,0 +1,35 @@
+imap:
+  host: "imap.yandex.ru"               # Адрес IMAP-сервера
+  port: 993                            # Порт подключения (обычно 993 для TLS)
+  username: "user@example.com"         # Логин для входа на почту
+  # password хранится в secrets.yaml и не включается сюда для безопасности
+
+telegram:
+  default_channel: "-1111111111111"    # Канал по умолчанию для писем, если ни одно правило не сработало
+  errors_channel: "-2222222222222"     # Канал для ошибок работы бота (IMAP, Telegram API и т.п.)
+
+route:
+  - folders:
+      - name: "INBOX"                  # Имя папки IMAP, которую проверяем
+        rules:
+          - pattern: "TESTING"         # Регулярное выражение для темы письма
+            # Поддерживаются стандартные Go-regular expressions (RE2),
+            channel: "-3333333333333"  # Канал, куда отправлять письма при совпадении
+          - pattern: "PREPROD"
+            channel: "-4444444444444"
+          - pattern: "PROD"
+            channel: "-5555555555555"
+
+log_settings:
+  directory: "logs"                    # Директория хранения логов
+  filename: "app.log"                  # Имя лог-файла
+  max_size: 100                        # Максимальный размер файла в MB
+  max_backups: 10                      # Количество старых лог-файлов, которые сохраняем
+  max_age: 7                           # Срок хранения файлов в днях
+  compress: true                       # Сжимать старые файлы gzip
+  level: "info"                        # Уровень логирования: debug, info, warn, error
+  console_enabled: true                # Писать логи на консоль
+
+check_interval: 60                     # Интервал проверки почты в секундах
+secrets: config/secrets.yaml           # Путь к файлу с секретами (пароль IMAP и др.)
+service_port: 9090                     # Порт HTTP-сервера для метрик Prometheus и healthcheck

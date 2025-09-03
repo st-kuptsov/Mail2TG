@@ -1,0 +1,4 @@
+config/secrets.yaml
+config/config.yaml
+.idea/
+logs/
