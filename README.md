@@ -78,7 +78,7 @@ telegram:
 ```bash
 ./mail2tg -config config/config.yaml
 ```
-- Метрики Prometheus доступны по адресу: http://localhost:<servicePort>/metrics, где <servicePort> берется из файла конфигурации (service_port).
+- Метрики Prometheus доступны по адресу: http://localhost:servicePort/metrics, где servicePort берется из файла конфигурации (service_port).
 - Логи записываются в файл logs/app.log (по умолчанию) и, при включенном параметре console_enabled: true, выводятся на консоль.
 
 ## Docker
