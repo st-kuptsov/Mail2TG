@@ -5,6 +5,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/st-kuptsov/mail2tg/config"
 	"github.com/st-kuptsov/mail2tg/internal/scheduler"
 	"github.com/st-kuptsov/mail2tg/internal/telegram"
@@ -48,6 +49,10 @@ func main() {
 	// Запуск HTTP-сервера для Prometheus в отдельной горутине
 	go func() {
 		servicePort := fmt.Sprintf(":%d", cfg.ServicePort)
+
+		// Регистрируем handler для /metrics
+		http.Handle("/metrics", promhttp.Handler())
+
 		logger.Infow("metrics server started", "port", servicePort)
 		if err := http.ListenAndServe(servicePort, nil); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			logger.Errorw("metrics server failed", "error", err)

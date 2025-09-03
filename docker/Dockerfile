@@ -42,7 +42,7 @@ COPY config/config.example.yaml ./config/config.yaml
 COPY config/secrets.example.yaml ./config/secrets.yaml
 
 # Копируем healthcheck
-COPY healthcheck.sh ./healthcheck.sh
+COPY docker/healthcheck.sh ./healthcheck.sh
 RUN chmod +x ./healthcheck.sh
 
 # Настройка таймзоны через переменную окружения TZ
