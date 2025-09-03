@@ -28,51 +28,6 @@
 - [`config/config.example.yaml`](config/config.example.yaml)
 - [`config/secrets.example.yaml`](config/secrets.example.yaml)
 
-
-```yaml
-imap:
-  host: "imap.yandex.ru"               # Адрес IMAP-сервера
-  port: 993                            # Порт подключения (обычно 993 для TLS)
-  username: "user@example.com"         # Логин для входа на почту
-  # password хранится в secrets.yaml и не включается сюда для безопасности
-
-telegram:
-  default_channel: "-1111111111111"    # Канал по умолчанию для писем, если ни одно правило не сработало
-  errors_channel: "-2222222222222"     # Канал для ошибок работы бота (IMAP, Telegram API и т.п.)
-
-route:
-  - folders:
-      - name: "INBOX"                  # Имя папки IMAP, которую проверяем
-        rules:
-          - pattern: "TESTING"         # Регулярное выражение для темы письма
-                                       # Поддерживаются стандартные Go-regular expressions (RE2),
-            channel: "-3333333333333"  # Канал, куда отправлять письма при совпадении
-          - pattern: "PREPROD"
-            channel: "-4444444444444"
-          - pattern: "PROD"
-            channel: "-5555555555555"
-
-log_settings:
-  directory: "logs"                    # Директория хранения логов
-  filename: "app.log"                  # Имя лог-файла
-  max_size: 100                        # Максимальный размер файла в MB
-  max_backups: 10                      # Количество старых лог-файлов, которые сохраняем
-  max_age: 7                           # Срок хранения файлов в днях
-  compress: true                       # Сжимать старые файлы gzip
-  level: "info"                        # Уровень логирования: debug, info, warn, error
-  console_enabled: true                # Писать логи на консоль
-
-check_interval: 60                     # Интервал проверки почты в секундах
-secrets: config/secrets.yaml           # Путь к файлу с секретами (пароль IMAP и др.)
-service_port: 9090                     # Порт HTTP-сервера для метрик Prometheus и healthcheck
-```
-```yaml
-imap:
-  password: "YOUR_IMAP_PASSWORD"
-telegram:
-  token: "YOUR_TELEGRAM_BOT_TOKEN"
-```
-
 ### 2. Сборка и запуск через Docker
 
 Сборка и запуск автоматизированы в скрипте `builder.sh`.
@@ -104,11 +59,14 @@ docker ps
 docker logs -f mail2tg
 ```
 
+---
+
 ## HEALTHCHECK
 - Контейнер содержит встроенный HEALTHCHECK, который проверяет метрику mailbox_successful_checks_total.
 - Если метрика не увеличивается между проверками, контейнер считается "unhealthy".
 - Период проверки — каждые 30 секунд, таймаут — 10 секунд, с 3 попытками.
 
+---
 
 ## Метрики Prometheus
 Mail2TG экспортирует метрики Prometheus для мониторинга состояния сервиса, обработки почты и отправки сообщений в Telegram.
@@ -136,6 +94,8 @@ Mail2TG экспортирует метрики Prometheus для монитор
 | `mail2tg_telegram_messages_errors_total` | Counter   | `channel_id` | Количество ошибок при отправке сообщений в Telegram по каждому каналу.          |
 | `mail2tg_telegram_send_duration_seconds` | Histogram | `channel_id` | Время отправки сообщений в Telegram. Позволяет отслеживать задержки по каналам. |
 
+---
+
 ## Логирование
 Примеры сообщений:
 ```text
@@ -151,10 +111,14 @@ INFO  Scheduler stopped
 - Стиль сообщений — строчные буквы, короткие описательные фразы.
 - Используются уровни: debug, info, warn, error.
 
+---
+
 ## Graceful shutdown
 - Контекст context.Context используется для корректного завершения всех фоновых горутин.
 - Планировщик и HTTP-сервер останавливаются при получении сигнала SIGINT или SIGTERM.
 - Метрика uptime продолжает работать до остановки сервиса.
+
+---
 
 ## Пример workflow
 1. Новое письмо приходит на IMAP.
