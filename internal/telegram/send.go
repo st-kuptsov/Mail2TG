@@ -1,7 +1,7 @@
 package telegram
 
 import (
-	"github.com/st-kuptsov/mail2tg/pkg/utils"
+	"github.com/st-kuptsov/mail2tg/pkg/metrics"
 	"go.uber.org/zap"
 	tb "gopkg.in/telebot.v3"
 	"regexp"
@@ -31,10 +31,10 @@ func SendToTelegram(msg, channel string, logger *zap.SugaredLogger) {
 	start := time.Now()
 	_, err := Bot.Send(&tb.Chat{ID: chatID}, msg)
 	duration := time.Since(start).Seconds()
-	utils.TgSendDuration.WithLabelValues(channel).Observe(duration)
+	metrics.TgSendDuration.WithLabelValues(channel).Observe(duration)
 
 	if err != nil {
-		utils.TgErrors.WithLabelValues(channel).Inc()
+		metrics.TgErrors.WithLabelValues(channel).Inc()
 
 		if strings.Contains(err.Error(), "retry after") {
 			retryAfter := extractRetryAfter(err)
@@ -44,7 +44,7 @@ func SendToTelegram(msg, channel string, logger *zap.SugaredLogger) {
 			// Повторная отправка
 			startRetry := time.Now()
 			_, errRetry := Bot.Send(&tb.Chat{ID: chatID}, msg)
-			utils.TgSendDuration.WithLabelValues(channel).Observe(time.Since(startRetry).Seconds())
+			metrics.TgSendDuration.WithLabelValues(channel).Observe(time.Since(startRetry).Seconds())
 
 			if errRetry != nil {
 				logger.Errorf("failed to send message on retry: %v", errRetry)
@@ -57,7 +57,7 @@ func SendToTelegram(msg, channel string, logger *zap.SugaredLogger) {
 	}
 
 	logger.Infof("message sent to channel %s", channel)
-	utils.TgMessagesSent.WithLabelValues(channel).Inc()
+	metrics.TgMessagesSent.WithLabelValues(channel).Inc()
 }
 
 // extractRetryAfter извлекает время ожидания из ошибки "retry after"

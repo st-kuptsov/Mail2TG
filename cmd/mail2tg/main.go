@@ -9,7 +9,8 @@ import (
 	"github.com/st-kuptsov/mail2tg/config"
 	"github.com/st-kuptsov/mail2tg/internal/scheduler"
 	"github.com/st-kuptsov/mail2tg/internal/telegram"
-	"github.com/st-kuptsov/mail2tg/pkg/utils"
+	logs "github.com/st-kuptsov/mail2tg/pkg/logs"
+	"github.com/st-kuptsov/mail2tg/pkg/metrics"
 	tb "gopkg.in/telebot.v3"
 	"log"
 	"net/http"
@@ -33,7 +34,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	logger := utils.DefaultLogger(cfg.Logging)
+	logger := logs.DefaultLogger(cfg.Logging)
 
 	logger.Infow("starting mail2tg",
 		"config", *configPath,
@@ -44,7 +45,7 @@ func main() {
 
 	// Инициализация метрик
 	logger.Debug("initializing metrics server")
-	utils.InitMetrics()
+	metrics.InitMetrics()
 
 	// Запуск HTTP-сервера для Prometheus в отдельной горутине
 	go func() {

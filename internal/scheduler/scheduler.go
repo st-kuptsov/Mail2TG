@@ -7,7 +7,7 @@ import (
 	"github.com/st-kuptsov/mail2tg/internal/email"
 	"github.com/st-kuptsov/mail2tg/internal/route"
 	"github.com/st-kuptsov/mail2tg/internal/telegram"
-	"github.com/st-kuptsov/mail2tg/pkg/utils"
+	"github.com/st-kuptsov/mail2tg/pkg/metrics"
 	"go.uber.org/zap"
 	"time"
 )
@@ -24,19 +24,19 @@ func Scheduler(ctx context.Context, cfg *config.Config, logger *zap.SugaredLogge
 			logger.Infow("scheduler stopped")
 			return
 		case <-ticker.C:
-			utils.UptimeGauge.Set(time.Since(start).Seconds())
+			metrics.UptimeGauge.Set(time.Since(start).Seconds())
 
 			func() {
 				// Отслеживание времени обработки всех писем
 				processingStart := time.Now()
 				defer func() {
-					utils.MailProcessingDuration.Observe(time.Since(processingStart).Seconds())
+					metrics.MailProcessingDuration.Observe(time.Since(processingStart).Seconds())
 				}()
 
 				defer func() {
 					if r := recover(); r != nil {
 						logger.Errorf("panic recovered: %v", r)
-						utils.MailErrors.Inc()
+						metrics.MailErrors.Inc()
 						telegram.SendToTelegram(
 							fmt.Sprintf("Паника в обработчике почты: %v", r),
 							cfg.Telegram.ErrorsChannel,
@@ -49,7 +49,7 @@ func Scheduler(ctx context.Context, cfg *config.Config, logger *zap.SugaredLogge
 				c, err := email.ConnectToIMAP(cfg, logger)
 				if err != nil {
 					logger.Errorf("IMAP connection error: %v", err)
-					utils.MailErrors.Inc()
+					metrics.MailErrors.Inc()
 					telegram.SendToTelegram("Ошибка подключения к почте: "+err.Error(),
 						cfg.Telegram.ErrorsChannel, logger)
 					return
@@ -66,7 +66,7 @@ func Scheduler(ctx context.Context, cfg *config.Config, logger *zap.SugaredLogge
 						messages, err := email.FetchUnreadEmails(cfg, f, c, logger)
 						if err != nil {
 							logger.Errorf("fetch unread emails error: %v", err)
-							utils.MailErrors.Inc()
+							metrics.MailErrors.Inc()
 							telegram.SendToTelegram("Ошибка получения писем: "+err.Error(),
 								cfg.Telegram.ErrorsChannel, logger)
 							continue

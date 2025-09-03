@@ -5,7 +5,7 @@ import (
 	"github.com/emersion/go-imap"
 	"github.com/emersion/go-imap/client"
 	"github.com/st-kuptsov/mail2tg/config"
-	"github.com/st-kuptsov/mail2tg/pkg/utils"
+	"github.com/st-kuptsov/mail2tg/pkg/metrics"
 	"go.uber.org/zap"
 	"net/mail"
 )
@@ -39,7 +39,7 @@ func FetchUnreadEmails(cfg *config.Config, f config.Folder, c *client.Client, lo
 	}
 
 	logger.Infow("unread emails found", "folder", f.Name, "count", len(ids))
-	utils.MailChecks.Inc()
+	metrics.MailChecks.Inc()
 
 	if len(ids) == 0 {
 		return nil, nil
@@ -77,7 +77,7 @@ func FetchUnreadEmails(cfg *config.Config, f config.Folder, c *client.Client, lo
 		}
 
 		result = append(result, m)
-		utils.MailReceived.Inc()
+		metrics.MailReceived.Inc()
 	}
 
 	// Проверяем ошибки после завершения Fetch
