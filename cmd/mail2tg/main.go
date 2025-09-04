@@ -29,16 +29,21 @@ func main() {
 	configPath := flag.String("config", "config/config.yaml", "Path to config file")
 	flag.Parse()
 
-	cfg, err := config.GetConfig(*configPath)
+	//cfg, err := config.GetConfig(*configPath)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+
+	conf, err := config.LoadConfigWithHash(*configPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	logger := logs.DefaultLogger(cfg.Logging)
+	logger := logs.DefaultLogger(conf.Config.Logging)
 
 	logger.Infow("starting mail2tg",
 		"config", *configPath,
-		"logLevel", cfg.Logging.Level,
+		"logLevel", conf.Config.Logging.Level,
 		"pid", os.Getpid(),
 		"version", Version,
 	)
@@ -49,7 +54,7 @@ func main() {
 
 	// Запуск HTTP-сервера для Prometheus в отдельной горутине
 	go func() {
-		servicePort := fmt.Sprintf(":%d", cfg.ServicePort)
+		servicePort := fmt.Sprintf(":%d", conf.Config.ServicePort)
 
 		// Регистрируем handler для /metrics
 		http.Handle("/metrics", promhttp.Handler())
@@ -63,7 +68,7 @@ func main() {
 	// Инициализация Telegram-бота
 	logger.Debug("initializing telegram bot")
 	pref := tb.Settings{
-		Token:  cfg.Telegram.Token,
+		Token:  conf.Config.Telegram.Token,
 		Poller: &tb.LongPoller{Timeout: 10 * time.Second},
 	}
 
@@ -78,7 +83,7 @@ func main() {
 	defer cancel()
 
 	logger.Debug("starting scheduler")
-	go scheduler.Scheduler(ctx, cfg, logger, start)
+	go scheduler.Scheduler(ctx, conf, logger, start, *configPath)
 
 	// Ожидание сигнала остановки
 	stop := make(chan os.Signal, 1)
