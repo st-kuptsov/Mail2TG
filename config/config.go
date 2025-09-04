@@ -12,6 +12,7 @@ type Config struct {
 	Telegram      TelegramConfig `yaml:"telegram"`
 	Route         []RouteConfig  `yaml:"route"`
 	Logging       LogConfig      `yaml:"log_settings"`
+	Alerting      AlertSettings  `yaml:"alert_settings"`
 	CheckInterval int            `yaml:"check_interval"`
 	SecretsPath   string         `yaml:"secrets"`
 	ServicePort   int            `yaml:"service_port" env-default:"9090"`
@@ -54,6 +55,10 @@ type LogConfig struct {
 	Compress   bool   `yaml:"compress" env-default:"true"`
 	Level      string `yaml:"level" env-default:"info"`
 	Console    bool   `yaml:"console_enabled" env-default:"false"`
+}
+
+type AlertSettings struct {
+	AlertEmailDelay int `yaml:"alert_email_delay" env-default:"60"`
 }
 
 // GetConfig загружает конфигурацию из файла, возвращает указатель и ошибку

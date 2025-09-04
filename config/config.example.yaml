@@ -20,6 +20,9 @@ route:
           - pattern: "PROD"
             channel: "-5555555555555"
 
+alert_settings:
+  alert_email_delay: 60                # Время (в секундах), которое ошибка должна сохраняться перед отправкой уведомления
+
 log_settings:
   directory: "logs"                    # Директория хранения логов
   filename: "app.log"                  # Имя лог-файла
