@@ -14,8 +14,8 @@ import (
 
 // Scheduler запускает цикл опроса почты по заданному интервалу.
 // Работает до отмены контекста.
-func Scheduler(ctx context.Context, cfg *config.Config, logger *zap.SugaredLogger, start time.Time) {
-	ticker := time.NewTicker(time.Duration(cfg.CheckInterval) * time.Second)
+func Scheduler(ctx context.Context, conf *config.CachedConfig, logger *zap.SugaredLogger, start time.Time, configPath string) {
+	ticker := time.NewTicker(time.Duration(conf.Config.CheckInterval) * time.Second)
 	defer ticker.Stop()
 
 	for {
@@ -33,25 +33,33 @@ func Scheduler(ctx context.Context, cfg *config.Config, logger *zap.SugaredLogge
 					metrics.MailProcessingDuration.Observe(time.Since(processingStart).Seconds())
 				}()
 
+				changed, err := conf.ReloadIfChanged(configPath)
+				if err != nil {
+					logger.Errorw("reload config error", "error", err)
+				}
+				if changed {
+					logger.Infow("config reloaded due to changes")
+				}
+
 				defer func() {
 					if r := recover(); r != nil {
 						logger.Errorf("panic recovered: %v", r)
 						metrics.MailErrors.Inc()
 						telegram.SendToTelegram(
 							fmt.Sprintf("Паника в обработчике почты: %v", r),
-							cfg.Telegram.ErrorsChannel,
+							conf.Config.Telegram.ErrorsChannel,
 							logger,
 						)
 					}
 				}()
 
 				// Подключение к IMAP
-				c, err := email.ConnectToIMAP(cfg, logger)
+				c, err := email.ConnectToIMAP(conf.Config, logger)
 				if err != nil {
 					logger.Errorf("IMAP connection error: %v", err)
 					metrics.MailErrors.Inc()
 					telegram.SendToTelegram("Ошибка подключения к почте: "+err.Error(),
-						cfg.Telegram.ErrorsChannel, logger)
+						conf.Config.Telegram.ErrorsChannel, logger)
 					return
 				}
 				defer func() {
@@ -61,20 +69,20 @@ func Scheduler(ctx context.Context, cfg *config.Config, logger *zap.SugaredLogge
 				}()
 
 				// Обходим все папки и правила
-				for _, r := range cfg.Route {
+				for _, r := range conf.Config.Route {
 					for _, f := range r.Folders {
-						messages, err := email.FetchUnreadEmails(cfg, f, c, logger)
+						messages, err := email.FetchUnreadEmails(conf.Config, f, c, logger)
 						if err != nil {
 							logger.Errorf("fetch unread emails error: %v", err)
 							metrics.MailErrors.Inc()
 							telegram.SendToTelegram("Ошибка получения писем: "+err.Error(),
-								cfg.Telegram.ErrorsChannel, logger)
+								conf.Config.Telegram.ErrorsChannel, logger)
 							continue
 						}
 
 						for _, m := range messages {
 							subject, body := email.DecodeMessage(m, logger)
-							route.RouteMessage(cfg, f, subject, body, logger)
+							route.RouteMessage(conf.Config, f, subject, body, logger)
 						}
 					}
 				}

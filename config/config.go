@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"github.com/ilyakaznacheev/cleanenv"
 	"log"
 )
@@ -57,7 +58,6 @@ type LogConfig struct {
 
 // GetConfig загружает конфигурацию из файла, возвращает указатель и ошибку
 func GetConfig(configPath string) (*Config, error) {
-	log.Println("Чтение конфигурации...")
 
 	var cfg Config
 
@@ -66,7 +66,8 @@ func GetConfig(configPath string) (*Config, error) {
 		if help, err2 := cleanenv.GetDescription(&cfg, nil); err2 == nil {
 			log.Println(help)
 		}
-		log.Fatalf("Ошибка загрузки конфигурации: %v", err)
+		// Не завершать процесс, возвращаем ошибку
+		return nil, fmt.Errorf("ошибка загрузки конфигурации: %w", err)
 	}
 
 	// Загружаем секреты, если указан путь
