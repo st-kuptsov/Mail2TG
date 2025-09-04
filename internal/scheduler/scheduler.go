@@ -4,13 +4,19 @@ import (
 	"context"
 	"fmt"
 	"github.com/st-kuptsov/mail2tg/config"
+	"github.com/st-kuptsov/mail2tg/internal/alerts"
 	"github.com/st-kuptsov/mail2tg/internal/email"
 	"github.com/st-kuptsov/mail2tg/internal/route"
 	"github.com/st-kuptsov/mail2tg/internal/telegram"
 	"github.com/st-kuptsov/mail2tg/pkg/metrics"
 	"go.uber.org/zap"
+	"sync"
 	"time"
 )
+
+var mu sync.Mutex
+var connectionToIMAP alerts.Status
+var fetchUnreadEmails alerts.Status
 
 // Scheduler запускает цикл опроса почты по заданному интервалу.
 // Работает до отмены контекста.
@@ -55,13 +61,15 @@ func Scheduler(ctx context.Context, conf *config.CachedConfig, logger *zap.Sugar
 
 				// Подключение к IMAP
 				c, err := email.ConnectToIMAP(conf.Config, logger)
+				mu.Lock()
+				alerts.ConnectToIMAPError(err, logger, conf, &connectionToIMAP)
+				mu.Unlock()
+
 				if err != nil {
-					logger.Errorf("IMAP connection error: %v", err)
-					metrics.MailErrors.Inc()
-					telegram.SendToTelegram("Ошибка подключения к почте: "+err.Error(),
-						conf.Config.Telegram.ErrorsChannel, logger)
+					// не получилось подключиться — дальше смысла идти нет
 					return
 				}
+
 				defer func() {
 					if err := c.Logout(); err != nil {
 						logger.Warnf("Ошибка выхода из IMAP: %v", err)
@@ -72,13 +80,9 @@ func Scheduler(ctx context.Context, conf *config.CachedConfig, logger *zap.Sugar
 				for _, r := range conf.Config.Route {
 					for _, f := range r.Folders {
 						messages, err := email.FetchUnreadEmails(conf.Config, f, c, logger)
-						if err != nil {
-							logger.Errorf("fetch unread emails error: %v", err)
-							metrics.MailErrors.Inc()
-							telegram.SendToTelegram("Ошибка получения писем: "+err.Error(),
-								conf.Config.Telegram.ErrorsChannel, logger)
-							continue
-						}
+						mu.Lock()
+						alerts.FetchUnreadEmailsError(err, logger, conf, &fetchUnreadEmails)
+						mu.Unlock()
 
 						for _, m := range messages {
 							subject, body := email.DecodeMessage(m, logger)
